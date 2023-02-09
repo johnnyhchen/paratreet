@@ -1,0 +1,16 @@
+mainmodule Main {
+    extern module paratreet;
+    extern module unionFindLib;
+   
+    // readonly bool X; // if you want global variables
+    readonly CProxy_UnionFindLib libProxy;
+    // readonly CProxy_Main mainProxy;
+    readonly int NUM_VERTICES;
+    readonly int NUM_EDGES;
+    readonly int NUM_TREEPIECES;
+    // readonly long lastChareBegin;
+
+    initnode void initialize(void);
+
+    extern entry void Partition<FoFData> startDown<FoFVisitor> (FoFVisitor v);
+}
