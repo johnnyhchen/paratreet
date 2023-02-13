@@ -12,11 +12,14 @@
 #include "ThreadStateHolder.h"
 #include "paratreet.decl.h"
 #include "LBCommon.h"
+#include "../../unionfind/unionFindLib.h"
 
 CkpvExtern(int, _lb_obj_index);
 extern CProxy_TreeSpec treespec;
 extern CProxy_Reader readers;
 extern CProxy_ThreadStateHolder thread_state_holder;
+extern CProxy_UnionFindLib libProxy;
+extern int NUM_VERTICES;
 using namespace LBCommon;
 
 template <typename Data>
@@ -31,6 +34,8 @@ struct Partition : public CBase_Partition<Data> {
   int n_partitions;
 
   std::map<int, std::vector<Key>> lookup_leaf_keys;
+
+  unionFindVertex *libVertices; // TODO: check if this should be a field in the Partition struct (probably)
 
   // filled in during traversal
 
@@ -71,6 +76,9 @@ struct Partition : public CBase_Partition<Data> {
   void ResumeFromSync(){
     return;
   };
+  void initializeLibVertices(const CkCallback &cb);
+  void unionRequest(const CkCallback &cb, int sp_order, int tp_order);
+  void getConnectedComponents();
 
   Real time_advanced = 0;
   int iter = 1;
@@ -477,6 +485,42 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
     }
 
     w[writer_idx].receive(writer_particles, time_advanced, iter);
+  }
+}
+
+
+template <typename Data>
+void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
+  libVertices = new unionFindVertex[NUM_VERTICES];
+  for (int i = 0; i < NUM_VERTICES; i++) {
+      libVertices[i].vertexID = saved_particles[i].order;
+#ifndef ANCHOR_ALGO
+      libVertices[i].parent = -1;  // init all vertices to have .parent = -1
+#else
+      libVertices[i].parent = libVertices[i].vertexID;
+#endif
+  }
+  UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();  // get pointer to local copy of UnionFind lib
+  libPtr->initialize_vertices(libVertices, NUM_VERTICES);  // pass array of vertices we just created to union find lib
+  libPtr->registerGetLocationFromID(this->getLocationFromID);  // passes to UnionFindLib a method (getLocationFromID) that locates a vertex given the vertex id (returns chare vertex is on and place in the array on that chare)
+  
+  //contribute(CkCallback(CkReductionTarget(ExMain, done), mainProxy));
+  this->contribute(cb);  // TODO: is this correct?
+  // so...when all chares are finished running this method. the next thing that gets called is the startWork method by the mainProxy chare
+}
+
+// entry method call = inefficient. way to optimze? (TRQ)
+template <typename Data>
+void Partition<Data>::unionRequest(const CkCallback& cb, int sp_order, int tp_order) {
+  libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
+  this->contribute(cb);
+}
+
+// TODO: does this have to be an entry method (or a member function at that) - if not remove "entry" function annotation from Paratreet.ci
+template <typename Data>
+void Partition<Data>::getConnectedComponents() {
+  for (int i = 0; i < NUM_VERTICES; i++) {
+      CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, i, libVertices[i].vertexID, libVertices[i].parent, libVertices[i].componentNumber);
   }
 }
 
