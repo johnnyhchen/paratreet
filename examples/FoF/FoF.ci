@@ -12,5 +12,5 @@ mainmodule Main {
 
     initnode void initialize(void);
 
-    extern entry void Partition<FoFData> startDown<FoFVisitor> (FoFVisitor v);
+    extern entry void Partition<CentroidData> startDown<FoFVisitor> (FoFVisitor v);
 }

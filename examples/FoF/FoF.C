@@ -2,15 +2,12 @@
 #include "Paratreet.h"
 #include <iostream>
 #include "../unionfind/unionFindLib.h"
-#include "graph.decl.h"
-#include "graph-io.h"
 #include "FoFVisitor.h"
 
 extern bool verify;
 extern Real max_timestep;
 extern unionFindVertex *libVertices;
 
-/*readonly*/ CProxy_Main mainProxy; // TODO: how to populate this field so Partitions::initializeVertices() can access this?
 /*readonly*/ CProxy_UnionFindLib libProxy;
 /*readonly*/ CProxy_Partition<CentroidData> partitionProxy;
 /*readonly*/ UnionFindLib *libPtr;
@@ -22,7 +19,7 @@ extern unionFindVertex *libVertices;
   using namespace paratreet;
 
   template <typename Data>
-  class FoFMain : public ExMain {
+  class FoF : public ExMain {
     public:
     BoundingBox universe;
     int n_partitions;
@@ -36,7 +33,7 @@ extern unionFindVertex *libVertices;
     CProxy_TreeCanopy<Data> canopy;  // called calculator in Driver.h code
     double start_time;  // for benchmarking
 
-    void main(CkArgMsg* msg) {
+    void main(CkArgMsg* msg) override {
       /*
       // I think we might not need to set the config since we are not using the iteration code in Driver.h
       // set config: todo check driver code, there's a section about dropping const-ness somewhere which we need to do here
@@ -67,11 +64,10 @@ extern unionFindVertex *libVertices;
     }
 
     void initializeDriver(const CkCallback& cb) override {
-      this->driver = initialize<data_type>(cb);
+      initialize(cb);
     }
 
-    template<typename Data>
-    CProxy_Driver<Data> initialize(const CkCallback& cb) {
+    void initialize(const CkCallback& cb) {
         // Create readers
         n_readers = CkNumPes();
         readers = CProxy_Reader::ckNew();
@@ -95,12 +91,11 @@ extern unionFindVertex *libVertices;
         */
 
         auto& cfg = const_cast<paratreet::Configuration&>(paratreet::getConfiguration());
-        init(cb, CkReference<Congfiguration>(cfg)); // once init() is done it will call run() as its callback
+        init(cb, CkReference<Configuration>(cfg)); // once init() is done it will call run() as its callback
     }
 
 
     // Performs initial decomposition
-    template<typename Data>
     void init(const CkCallback& cb, const paratreet::Configuration& cfg) {
       // Ensure all treespecs have been created
       CkPrintf("* Validating tree specifications.\n");
@@ -210,6 +205,18 @@ extern unionFindVertex *libVertices;
           (CkWallTimer() - start_time) * 1000);
       CkPrintf("**Total Decomposition time: %.3lf ms\n",
           (CkWallTimer() - decomp_time) * 1000);
+
+      // Initialize unionFindLib
+
+      NUM_VERTICES = universe.n_particles;
+      partitionProxy = partitions; // TODO: delete partitions local variable, just assign to partitionProxy global var
+
+      libProxy = UnionFindLib::unionFindInit(partitionProxy, subtrees[0].ckLocal()->n_partitions); // can also use proxy_pack.partition[0].ckLocal()->n_partitions;
+
+      // Add vertices
+      //libProxy[0].register_phase_one_cb(CkCallbackResumeThread()); // TODO: do we need this since we do nothing in the callback?
+      partitionProxy.initializeLibVertices(CkCallbackResumeThread());
+      CkPrintf("Initialized %d vertices in UnionFindLib\n", NUM_VERTICES);
     }
 
     void remakeUniverse() {
@@ -359,30 +366,6 @@ extern unionFindVertex *libVertices;
     }
 
     void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-      NUM_VERTICES = universe.n_particles; // TODO: verify this works
-      
-      // putting below UnionFindInit section in traversalFn because we need the number of particles (vertices) to do initializeLibVertices
-
-      // mainProxy = this->thisProxy; // TODO: does this work?
-      partitionProxy = proxy_pack.partition;
-      // TODO: figure out if the partition proxy and subtree proxy are bound arrays (so we can use the thisIndex trick)
-      // also find out how to get `thisIndex` variable in scope
-
-      // Initialize UnionFindLib
-      libProxy = UnionFindLib::unionFindInit(partitionProxy, proxy_pack.subtree[0].ckLocal()->n_partitions); // can also use proxy_pack.partition[0].ckLocal()->n_partitions;
-
-      // Add vertices
-      //libProxy[0].register_phase_one_cb(CkCallbackResumeThread()); // TODO: do we need this since we do nothing in the callback?
-
-      // how did Graph.C define a initializeLibVertices() function in TreePiece class, but was able to call the function on the tpProxy?
-      // It think charm++ will autogenerate the member function for a proxy in the FoFMain.def.h file once we compile it...?
-      partitionProxy.initializeLibVertices(CkCallbackResumeThread());
-
-      // how to get array of all particles? do this in main?
-      // what passes the traversalFn the universe field? no results so far...
-      // (*libPtr).initialize_vertices( , NUM_VERTICES);// TODO how to get other field (all particles in system)?
-      // libProxy.initialize_vertices(proxy_pack.cache, NUM_VERTICES);
-
       proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
     }
 
@@ -396,33 +379,29 @@ extern unionFindVertex *libVertices;
       libProxy.find_components(CkCallbackResumeThread());
       // print libProxy results: to access results, iterate through libVertices (externed above, remove if we don't access in this file)
       // TODO: figure out output format: what format to print to and what API (see Writer.h)
+      partitionProxy.getConnectedComponents(CkCallbackResumeThread());
+      paratreet::outputParticleAccelerations(universe, partitionProxy);
+    }
+
+
+    void doneFindComponents() {
+        CkPrintf("[Main] Components identified, prune unecessary ones now\n");
+        CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()- start_time);
+        // callback for library to report to after pruning
+        CkCallback cb(CkIndex_TreePiece::requestVertices(), partitions); // TODO: define requestVertices() function in Partitions.h
+        libProxy.prune_components(1, cb);  // can imagine will prune_components that i.e. have only 1 element. also reports # of components in parent tree (see UnionFindLib.C)
+        // requestVertices() called when prune_components done
+    }
+
+    void donePrinting() {
+      // print output here
       partitionProxy.getConnectedComponents();
     }
+
+    // TODO: Do we need this?
+    Real getTimestep(BoundingBox& universe, Real max_velocity) {
+      Real universe_box_len = universe.box.greater_corner.x - universe.box.lesser_corner.x;
+      Real temp = universe_box_len / max_velocity / std::cbrt(universe.n_particles);
+      return std::min(temp, max_timestep);
+    }
   };
-
-  void doneFindComponents() {
-      CkPrintf("[Main] Components identified, prune unecessary ones now\n");
-      CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()-startTime);
-      // callback for library to report to after pruning
-      CkCallback cb(CkIndex_TreePiece::requestVertices(), tpProxy); // TODO: define requestVertices() function in Partitions.h
-      libProxy.prune_components(1, cb);  // can imagine will prune_components that i.e. have only 1 element. also reports # of components in parent tree (see UnionFindLib.C)
-      // requestVertices() called when prune_components done
-  }
-
-  void donePrinting() {
-    // print output here
-    partitionProxy.getConnectedComponents();
-  }
-
-  // TODO: Do we need this?
-  Real ExMain::getTimestep(BoundingBox& universe, Real max_velocity) {
-    Real universe_box_len = universe.box.greater_corner.x - universe.box.lesser_corner.x;
-    Real temp = universe_box_len / max_velocity / std::cbrt(universe.n_particles);
-    return std::min(temp, max_timestep);
-  }
-
-  /*
-  void run(CkCallback cb) {
-    // not sure where to set config
-  }
-  */
