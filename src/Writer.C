@@ -30,10 +30,11 @@ void Writer::write(CkCallback cb)
 
 void Writer::do_write()
 {
-  // Write particle accelerations to output file
+  // Write particle accelerations and other quantities to output file
   FILE *fp;
   FILE *fpDen;
   FILE *fpPres;
+  FILE *fpGrp;
   if (thisIndex == 0 && cur_dim == 0) {
     fp = CmiFopen((output_file+".acc").c_str(), "w");
     fprintf(fp, "%d\n", total_particles);
@@ -41,14 +42,19 @@ void Writer::do_write()
     fprintf(fpDen, "%d\n", total_particles);
     fpPres = CmiFopen((output_file+".pres").c_str(), "w");
     fprintf(fpPres, "%d\n", total_particles);
+    // TODO: add a macro that does not print out group number if we don't run FoF
+    fpGrp = CmiFopen((output_file+".grp").c_str(), "w");  // grp = group number for FoF connected component
+    fprintf(fpGrp, "%d\n", total_particles);
   } else {
       fp = CmiFopen((output_file+".acc").c_str(), "a");
       fpDen = CmiFopen((output_file+".den").c_str(), "a");
       fpPres = CmiFopen((output_file+".pres").c_str(), "a");
+      fpGrp = CmiFopen((output_file+".grp").c_str(), "s");
   }
   CkAssert(fp);
   CkAssert(fpDen);
   CkAssert(fpPres);
+  CkAssert(fpGrp);
 
   for (const auto& particle : particles) {
     Real outval;
@@ -60,6 +66,8 @@ void Writer::do_write()
         fprintf(fpDen, "%.14g\n", particle.density);
         const double gammam1 = 5./3. - 1.0;
         fprintf(fpPres, "%.14g\n", gammam1*particle.u*particle.density);
+        // TODO: same as above, have #ifdef to run only print group number if we are running FoF
+        fprintf(fpGrp, "%ld\n", particle.group_number);
     }
   }
 
@@ -68,6 +76,8 @@ void Writer::do_write()
   result = CmiFclose(fpDen);
   CkAssert(result == 0);
   result = CmiFclose(fpPres);
+  CkAssert(result == 0);
+  result = CmiFclose(fpGrp);
   CkAssert(result == 0);
 }
 

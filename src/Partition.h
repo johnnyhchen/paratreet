@@ -77,8 +77,8 @@ struct Partition : public CBase_Partition<Data> {
     return;
   };
   void initializeLibVertices(const CkCallback &cb);
-  void unionRequest(const CkCallback &cb, int sp_order, int tp_order);
-  void getConnectedComponents();
+  void unionRequest(int sp_order, int tp_order);
+  void getConnectedComponents(const CkCallback& cb);
 
   Real time_advanced = 0;
   int iter = 1;
@@ -454,6 +454,7 @@ void Partition<Data>::output(CProxy_TipsyWriter w, int n_total_particles, CkCall
   doOutput(w, n_total_particles, cb);
 }
 
+// TODO: use this to output particles for FoF once we assign group number to particles in getConnectedComponents() - maybe rename it to "outputConnectedComponents()"
 template <typename Data>
 template <typename WriterProxy>
 void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback cb)
@@ -461,6 +462,7 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
   std::vector<Particle> particles;
   copyParticles(particles, false);
 
+  // sort particles into original order and sends them to writer class
   std::sort(particles.begin(), particles.end(),
             [](const Particle& left, const Particle& right) {
               return left.order < right.order;
@@ -492,8 +494,9 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
 template <typename Data>
 void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   libVertices = new unionFindVertex[NUM_VERTICES];
+  const Particle* particles = leaves.particles();
   for (int i = 0; i < NUM_VERTICES; i++) {
-      libVertices[i].vertexID = saved_particles[i].order;
+      libVertices[i].vertexID = particles[i].order;
 #ifndef ANCHOR_ALGO
       libVertices[i].parent = -1;  // init all vertices to have .parent = -1
 #else
@@ -511,17 +514,22 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
 
 // entry method call = inefficient. way to optimze? (TRQ)
 template <typename Data>
-void Partition<Data>::unionRequest(const CkCallback& cb, int sp_order, int tp_order) {
+void Partition<Data>::unionRequest(int sp_order, int tp_order) {
   libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
-  this->contribute(cb);
 }
 
 // TODO: does this have to be an entry method (or a member function at that) - if not remove "entry" function annotation from Paratreet.ci
 template <typename Data>
-void Partition<Data>::getConnectedComponents() {
+void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
+  const Particle* particles = leaves.particles();
   for (int i = 0; i < NUM_VERTICES; i++) {
-      CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, i, libVertices[i].vertexID, libVertices[i].parent, libVertices[i].componentNumber);
+      // CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, i, libVertices[i].vertexID, libVertices[i].parent, libVertices[i].componentNumber);
+      // assign component number to saved particles
+      particles[i].group_number = libVertices[i].componentNumber;
   }
+  // make this a callback and "getConnectedComponents()" to assign particles
+  // once you resumethread to FoF class, call .output() on partitions proxy as a broadcast
+  this->contribute(cb);
 }
 
 #endif /* _PARTITION_H_ */
