@@ -2,7 +2,7 @@ include ../src/Makefile.common
 
 LBS = CommonLBs PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB DistributedOrbLB
 LB_LIBS = $(foreach m, $(LBS), -module $(m))
-OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS)
+OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) -DANCHOR_ALGO
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
 all: Gravity SPH Collision
@@ -40,6 +40,15 @@ Main.o: Main.C $(VISITORS) Main.decl.h
 	$(CHARMC) -c $<
 
 moments.o: moments.C
+	$(CHARMC) -c $<
+
+./FoF/FoF.decl.h: ./FoF/FoF.ci $(DATA)
+	$(CHARMC) $<
+
+FoF: ./FoF/FoF.o ../src/libparatreet.a
+	$(CHARMC) -language charm++ $(LB_LIBS) -o FoF ./FoF/FoF.o $(LD_LIBS)
+
+./FoF/FoF.o: ./FoF/FoF.C ./FoF/FoF.decl.h
 	$(CHARMC) -c $<
 
 test: all

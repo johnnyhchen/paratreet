@@ -15,7 +15,8 @@ extern CProxy_Partition<CentroidData> partitionProxy;
 
 struct FoFVisitor {
 private:
-  static const Real linkingLength = 0.2; // can't do static constexpr const Real like in CollisionVisitor.h
+// TODO: make this variable command line arg (so can try options when running)
+  static constexpr const Real linkingLength = 0.2; // can't do static constexpr const Real like in CollisionVisitor.h
 
 public:
   // static constexpr const bool CallSelfLeaf = true;
@@ -58,7 +59,8 @@ public:
           // Problem: FoFVisitor is not of type partition so does not have thisIndex
           // Solution?: Call partition proxy? nope, this is a broadcast (sends to all elements) need to send to ONE element with the particles
           // possible solution: store partition index in SpatialNode struct so it knows what partition it sits on (requires changing init for SpatialNodes or Partitions?)
-          partitionProxy.unionRequest(CkCallbackResumeThread(), sp.order, tp.order);
+          
+          partitionProxy[tp.partition_idx].unionRequest(sp.order, tp.order);
         }
       }
     }
