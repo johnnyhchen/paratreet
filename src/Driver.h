@@ -23,10 +23,13 @@
 #include "Node.h"
 #include "Writer.h"
 #include "Subtree.h"
+#include "unionFindLib.h"
+// #include "Partition.h"
 
 extern CProxy_Reader readers;
 extern CProxy_TreeSpec treespec;
 extern CProxy_ThreadStateHolder thread_state_holder;
+extern CProxy_UnionFindLib libProxy;
 
 template <typename Data>
 class Driver : public CBase_Driver<Data> {
@@ -177,6 +180,11 @@ public:
         (CkWallTimer() - start_time) * 1000);
     CkPrintf("**Total Decomposition time: %.3lf ms\n",
         (CkWallTimer() - decomp_time) * 1000);
+    
+    // Initialize UnionFind and populate vertices
+    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    partitions.initializeLibVertices(CkCallbackResumeThread());
+    CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
   }
 
   // Core iterative loop of the simulation

@@ -4,7 +4,6 @@ STRUCTURE_PATH = $(BASE_PATH)/utility/structures
 UNION_FIND_DIR = $(BASE_PATH)/../unionfind
 PREFIX_LIB_DIR = $(UNION_FIND_DIR)/prefixLib
 
-// -I. to include Paratreet classes imported
 INCLUDES:=$(INCLUDES) -I$(STRUCTURE_PATH) -I$(PARATREET_PATH) -I$(PREFIX_LIB_DIR) -I$(UNION_FIND_DIR) -I.
 CHARM_HOME ?= $(HOME)/charm-paratreet
 

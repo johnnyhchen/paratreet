@@ -48,7 +48,7 @@ moments.o: moments.C
 FoF: ./FoF/FoF.o ../src/libparatreet.a
 	$(CHARMC) -language charm++ $(LB_LIBS) -o FoF ./FoF/FoF.o $(LD_LIBS)
 
-./FoF/FoF.o: ./FoF/FoF.C ./FoF/FoF.decl.h
+./FoF/FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF/FoF.decl.h
 	$(CHARMC) -c $<
 
 test: all
