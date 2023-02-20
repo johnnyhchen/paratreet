@@ -1,4 +1,4 @@
-mainmodule Main {
+mainmodule FoF {
     extern module paratreet;
     extern module unionFindLib;
    

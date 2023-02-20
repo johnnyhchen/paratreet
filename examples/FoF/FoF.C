@@ -1,34 +1,19 @@
-#include "Main.h"
-#include "Paratreet.h"
 #include <iostream>
-#include "../unionfind/unionFindLib.h"
+#include "Paratreet.h"
+#include "CentroidData.h"
+#include "unionFindLib.h"
 #include "FoFVisitor.h"
 
-extern bool verify;
-extern Real max_timestep;
-extern unionFindVertex *libVertices;
 
 // IS it ok for us to declare a global variable here, and then define it in another file that extern's it?
-/*readonly*/ CProxy_UnionFindLib libProxy;
-/*readonly*/ CProxy_Partition<CentroidData> partitionProxy;
+CProxy_UnionFindLib libProxy;
+template <typename Data> CProxy_Partition<Data> partitionProxy;  // CentroidData
 
   using namespace paratreet;
 
   template <typename Data>
-  class FoF : public ExMain {
+  class FoF : public paratreet::Main<CentroidData> { // TODO see if we need to inherit from CBaseMain still or is just including FoF.h file enough?
     public:
-    BoundingBox universe;
-    int n_partitions;
-    // additional fields
-    int n_subtrees;
-    std::vector<int> partition_locations;
-    CProxy_Partition<Data> partitions;
-    CProxy_CacheManager<Data> cache_manager;
-    CProxy_Subtree<Data> subtrees;
-    CProxy_Resumer<Data> resumer;
-    CProxy_TreeCanopy<Data> canopy;  // called calculator in Driver.h code
-    double start_time;  // for benchmarking
-
     void main(CkArgMsg* msg) override {
       /*
       // I think we might not need to set the config since we are not using the iteration code in Driver.h
@@ -65,24 +50,32 @@ extern unionFindVertex *libVertices;
     void preTraversalFn(ProxyPack<CentroidData>& proxy_pack) override {
       // tells the Driver to load the Cache Manager with a starter pack of data, specified in Configuration.cache_share_depth
       proxy_pack.driver.loadCache(CkCallbackResumeThread()); // TODO: need to make config file and specify Configuration.cache_share_depth
+      
+      // TODO: Verify we are able to acccess these fields and remove corresponding code from Driver.h
+      partitionProxy = this->driver.partitions;
+      int n_partitions = this->driver.n_partitions;
+
+      libProxy = UnionFindLib::unionFindInit(partitionProxy, n_partitions);
+      partitions.initializeLibVertices(CkCallbackResumeThread());
+      // CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
     }
 
     void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
       proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
     }
 
-
+    template <typename Data>
     void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
       // output results from UnionFind for halos somehow
       // what data format should we output?
 
       // CkCallback cb(CkIndex_Main::done(), mainProxy);
-      partitionProxy.ckGetArrayID();
+      partitionProxy<Data>.ckGetArrayID();
       libProxy.find_components(CkCallbackResumeThread());
       // print libProxy results: to access results, iterate through libVertices (externed above, remove if we don't access in this file)
       // TODO: figure out output format: what format to print to and what API (see Writer.h)
-      partitionProxy.getConnectedComponents(CkCallbackResumeThread());
-      paratreet::outputParticleAccelerations(universe, partitionProxy);
+      partitionProxy<Data>.getConnectedComponents(CkCallbackResumeThread());
+      paratreet::outputParticleAccelerations(universe, partitionProxy<Data>);
     }
 
     // TODO: Figure out what prune components means

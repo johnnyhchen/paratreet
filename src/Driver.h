@@ -24,12 +24,15 @@
 #include "Writer.h"
 #include "Subtree.h"
 #include "unionFindLib.h"
+//#include "FoF.h"
+
 // #include "Partition.h"
 
 extern CProxy_Reader readers;
 extern CProxy_TreeSpec treespec;
 extern CProxy_ThreadStateHolder thread_state_holder;
-extern CProxy_UnionFindLib libProxy;
+// CProxy_UnionFindLib libProxy;
+// template <typename Data> CProxy_Partition<Data> partitionProxy;  // CentroidData type, using generics to avoid import into src files
 
 template <typename Data>
 class Driver : public CBase_Driver<Data> {
@@ -137,6 +140,8 @@ public:
       );
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
+    // Storing partition proxy for global access for FoF
+    // partitionProxy<Data> = partitions;
 
     start_time = CkWallTimer();
     readers.assignPartitions(n_partitions, partitions);
@@ -182,9 +187,9 @@ public:
         (CkWallTimer() - decomp_time) * 1000);
     
     // Initialize UnionFind and populate vertices
-    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
-    partitions.initializeLibVertices(CkCallbackResumeThread());
-    CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
+    // libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    // partitions.initializeLibVertices(CkCallbackResumeThread());
+    // CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
   }
 
   // Core iterative loop of the simulation

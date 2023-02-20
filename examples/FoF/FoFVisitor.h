@@ -8,10 +8,13 @@
 #include <cmath>
 #include <vector>
 #include <queue>
+#include "unionFindLib.h"
+#include "Partition.h"
+// #include "FoF.h"
 
-extern Real max_timestep;
 extern CProxy_UnionFindLib libProxy;
-extern CProxy_Partition<CentroidData> partitionProxy;
+template <typename Data>
+extern CProxy_Partition<Data> partitionProxy;  // CentroidData
 
 struct FoFVisitor {
 private:
@@ -46,6 +49,7 @@ public:
 
   }
 
+  template <typename Data>
   void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
     for (int i = 0; i < target.n_particles; i++) {
       for (int j = 0; j < source.n_particles; j++) {
@@ -60,7 +64,7 @@ public:
           // Solution?: Call partition proxy? nope, this is a broadcast (sends to all elements) need to send to ONE element with the particles
           // possible solution: store partition index in SpatialNode struct so it knows what partition it sits on (requires changing init for SpatialNodes or Partitions?)
           
-          partitionProxy[tp.partition_idx].unionRequest(sp.order, tp.order);
+          partitionProxy<Data>[tp.partition_idx].unionRequest(sp.order, tp.order);
         }
       }
     }

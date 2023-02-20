@@ -46,8 +46,9 @@ moments.o: moments.C
 	$(CHARMC) $<
 
 FoF: ./FoF/FoF.o ../src/libparatreet.a
-	$(CHARMC) -language charm++ $(LB_LIBS) -o FoF ./FoF/FoF.o $(LD_LIBS)
+	$(CHARMC) -language charm++ $(LB_LIBS) -o ./FoF/FoF ./FoF/FoF.o $(LD_LIBS)
 
+# todo test if the Visitor class should be included in the compiliation rule
 ./FoF/FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF/FoF.decl.h
 	$(CHARMC) -c $<
 
@@ -56,3 +57,4 @@ test: all
 
 clean:
 	rm -f *.decl.h *.def.h conv-host *.o Gravity SPH Collision charmrun moduleinit*
+	
