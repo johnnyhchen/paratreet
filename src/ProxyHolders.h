@@ -2,6 +2,7 @@
 #define PARATREET_PROXYHOLDERS_H_
 
 #include "paratreet.decl.h"
+#include "unionFindLib.decl.h"
 
 template <typename Data>
 class CProxy_Subtree;
@@ -58,21 +59,25 @@ struct DPHolder {
 template <typename Data>
 class CProxy_CacheManager;
 
+// note: don't need holder class for unionFind (Tom thinks)
+
 template <typename Data>
 struct ProxyPack {
   CProxy_Driver<Data> driver;
   CProxy_Subtree<Data> subtree;
   CProxy_Partition<Data> partition;
   CProxy_CacheManager<Data> cache;
+  CProxy_UnionFindLib libProxy;
   
-  ProxyPack(CProxy_Driver<Data> d, CProxy_Subtree<Data> s, CProxy_Partition<Data> p, CProxy_CacheManager<Data> c)
-    : driver(d), subtree(s), partition(p), cache(c) {}
+  ProxyPack(CProxy_Driver<Data> d, CProxy_Subtree<Data> s, CProxy_Partition<Data> p, CProxy_CacheManager<Data> c, CProxy_UnionFindLib u)
+    : driver(d), subtree(s), partition(p), cache(c), libProxy(u) {}
   ProxyPack() {}
   void pup(PUP::er& p) {
     p | driver;
     p | subtree;
     p | partition;
     p | cache;
+    p | libProxy;
   }
 };
 

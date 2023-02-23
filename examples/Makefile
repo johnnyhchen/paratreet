@@ -5,7 +5,7 @@ LB_LIBS = $(foreach m, $(LBS), -module $(m))
 OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) -DANCHOR_ALGO
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
-all: Gravity SPH Collision
+all: Gravity SPH Collision FoF
 DATA = CentroidData.h MultipoleMoments.h
 VISITORS = DensityVisitor.h PressureVisitor.h GravityVisitor.h CollisionVisitor.h
 
@@ -45,16 +45,16 @@ moments.o: moments.C
 ./FoF/FoF.decl.h: ./FoF/FoF.ci $(DATA)
 	$(CHARMC) $<
 
-FoF: ./FoF/FoF.o ../src/libparatreet.a
-	$(CHARMC) -language charm++ $(LB_LIBS) -o ./FoF/FoF ./FoF/FoF.o $(LD_LIBS)
+FoF: FoF.o ../src/libparatreet.a
+	$(CHARMC) -language charm++ $(LB_LIBS) -o ./FoF/FoF FoF.o $(LD_LIBS)
 
 # todo test if the Visitor class should be included in the compiliation rule
-./FoF/FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF/FoF.decl.h
+FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF/FoF.decl.h
 	$(CHARMC) -c $<
 
 test: all
 	./charmrun ./Gravity -f $(BASE_PATH)/inputgen/100k.tipsy -d sfc +p3 ++ppn 3 +pemap 1-3 +commap 0 ++local
 
 clean:
-	rm -f *.decl.h *.def.h conv-host *.o Gravity SPH Collision charmrun moduleinit*
+	rm -f *.decl.h *.def.h conv-host *.o ./FoF/*.decl.h ./FoF/*.def.h Gravity SPH Collision charmrun moduleinit*
 	

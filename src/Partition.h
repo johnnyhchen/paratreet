@@ -13,6 +13,7 @@
 #include "paratreet.decl.h"
 #include "LBCommon.h"
 #include "unionFindLib.h"
+// #include "CentroidData.h"
 // #include "FoF.h"
 
 CkpvExtern(int, _lb_obj_index);
@@ -489,7 +490,9 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
   }
 }
 
-
+// -------------------
+// Friends-of-Friends (FoF) functions
+// -------------------
 template <typename Data>
 void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   // don't want NUM_VERTICES (that's total number of vertices in universe) just want number of vertices for this partition

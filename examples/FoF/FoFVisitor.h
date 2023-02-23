@@ -13,8 +13,8 @@
 // #include "FoF.h"
 
 extern CProxy_UnionFindLib libProxy;
-template <typename Data>
-extern CProxy_Partition<Data> partitionProxy;  // CentroidData
+// template <typename Data>
+extern CProxy_Partition<CentroidData> partitionProxy;  // CentroidData
 
 struct FoFVisitor {
 private:
@@ -22,7 +22,7 @@ private:
   static constexpr const Real linkingLength = 0.2; // can't do static constexpr const Real like in CollisionVisitor.h
 
 public:
-  // static constexpr const bool CallSelfLeaf = true;
+  static constexpr const bool CallSelfLeaf = true;
   void pup(PUP::er& p) {}
 
 public:
@@ -49,7 +49,6 @@ public:
 
   }
 
-  template <typename Data>
   void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
     for (int i = 0; i < target.n_particles; i++) {
       for (int j = 0; j < source.n_particles; j++) {
@@ -64,7 +63,7 @@ public:
           // Solution?: Call partition proxy? nope, this is a broadcast (sends to all elements) need to send to ONE element with the particles
           // possible solution: store partition index in SpatialNode struct so it knows what partition it sits on (requires changing init for SpatialNodes or Partitions?)
           
-          partitionProxy<Data>[tp.partition_idx].unionRequest(sp.order, tp.order);
+          partitionProxy[tp.partition_idx].unionRequest(sp.order, tp.order);
         }
       }
     }
