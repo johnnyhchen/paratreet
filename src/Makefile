@@ -35,4 +35,4 @@ libmodule%.a : loadbalancers/%.ci loadbalancers/%.C loadbalancers/%.h LBCommon.h
 	$(CHARMC) -o $@ $(word 2,$^)
 
 clean:
-	rm -f *.decl.h *.def.h conv-host *.o *.a
+	rm -f *.decl*.h *.def*.h conv-host *.o *.a

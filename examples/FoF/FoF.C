@@ -3,17 +3,19 @@
 #include "CentroidData.h"
 #include "unionFindLib.h"
 #include "FoFVisitor.h"
-#include "Partition.h"
 #include "FoF.decl.h"
 
-// IS it ok for us to declare a global variable here, and then define it in another file that extern's it?
 /* readonly */ CProxy_UnionFindLib libProxy;
-/* readonly */ CProxy_Partition<CentroidData> partitionProxy;  // CentroidData
+/* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ Real max_timestep;
 
 using namespace paratreet;
 
-class FoF : public paratreet::Main<CentroidData> { // TODO see if we need to inherit from CBaseMain still or is just including FoF.h file enough?
+static void initialize() {
+  BoundingBox::registerReducer();
+}
+
+class FoF : public paratreet::Main<CentroidData> { 
   public:
   void main(CkArgMsg* m) override {    // Initialize readonly variables
     max_timestep = 1e-5;
@@ -57,7 +59,7 @@ class FoF : public paratreet::Main<CentroidData> { // TODO see if we need to inh
   // -------------------
   void preTraversalFn(ProxyPack<CentroidData>& proxy_pack) override {
     // tells the Driver to load the Cache Manager with a starter pack of data, specified in Configuration.cache_share_depth
-    proxy_pack.driver.loadCache(CkCallbackResumeThread()); // TODO: need to make config file and specify Configuration.cache_share_depth
+    proxy_pack.driver.loadCache(CkCallbackResumeThread());
     
     // store proxies for use in FoFVisitor
     libProxy = proxy_pack.libProxy;
@@ -112,3 +114,5 @@ class FoF : public paratreet::Main<CentroidData> { // TODO see if we need to inh
 };
 
 PARATREET_REGISTER_MAIN(FoF);
+#include "templates.h"
+#include "FoF.def.h"
