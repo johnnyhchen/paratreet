@@ -8,6 +8,7 @@
 /* readonly */ CProxy_UnionFindLib libProxy;
 /* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ Real max_timestep;
+/* readonly */ int peanoKey;
 
 using namespace paratreet;
 
@@ -16,17 +17,19 @@ static void initialize() {
 }
 
 class FoF : public paratreet::Main<CentroidData> { 
-  public:
   void main(CkArgMsg* m) override {    // Initialize readonly variables
     max_timestep = 1e-5;
+    peanoKey = 3;
 
-    
     // Process command line arguments
     int c;
     std::string input_str;
 
     while ((c = getopt(m->argc, m->argv, "mec:j:")) != -1) {
       switch (c) {
+        case 'm':
+          peanoKey = 0; // morton
+        break;
         case 'j':
           max_timestep = atof(optarg);
           break;

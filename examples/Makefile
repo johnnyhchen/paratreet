@@ -54,17 +54,18 @@ moments.o: moments.C
 # FoF.o: ./FoF/FoF.C ./FoFMain.decl.h
 # 	$(CHARMC) -c $<
 
-./FoF/FoF.decl.h: ./FoF/FoF.ci CentroidData.h #$(DATA)
+FoF.decl.h: ./FoF/FoF.ci $(DATA)
 	$(CHARMC) $<
-FoF: FoF.o ../src/libparatreet.a moments.o
-	$(CHARMC) -language charm++ $(LB_LIBS) -o ./FoF/FoF FoF.o $(LD_LIBS)
+
+FoFApp: ./FoF.decl.h ./FoF.o ../src/libparatreet.a moments.o
+	$(CHARMC) -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
 # todo test if the Visitor class should be included in the compiliation rule
-FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF/FoF.decl.h
+FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF.decl.h
 	$(CHARMC) -c $<
 
 test: all
 	./charmrun ./Gravity -f $(BASE_PATH)/inputgen/100k.tipsy -d sfc +p3 ++ppn 3 +pemap 1-3 +commap 0 ++local
 
 clean:
-	rm -f *.decl.h *.def.h conv-host *.o ./FoF/*.decl.h ./FoF/*.def.h Gravity SPH Collision charmrun moduleinit*
+	rm -f *.decl*.h *.def*.h conv-host *.o ./FoF/*.decl*.h ./FoF/*.def*.h Gravity SPH Collision charmrun moduleinit*
