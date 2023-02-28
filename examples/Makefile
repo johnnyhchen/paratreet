@@ -4,6 +4,7 @@ LBS = CommonLBs PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB 
 LB_LIBS = $(foreach m, $(LBS), -module $(m))
 OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) -DANCHOR_ALGO
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
+# how to add unionfind dependency to all applications? Use LBS var? 
 
 all: Gravity SPH Collision FoF
 DATA = CentroidData.h MultipoleMoments.h
@@ -68,4 +69,4 @@ test: all
 	./charmrun ./Gravity -f $(BASE_PATH)/inputgen/100k.tipsy -d sfc +p3 ++ppn 3 +pemap 1-3 +commap 0 ++local
 
 clean:
-	rm -f *.decl*.h *.def*.h conv-host *.o ./FoF/*.decl*.h ./FoF/*.def*.h Gravity SPH Collision charmrun moduleinit*
+	rm -f *.decl*.h *.def*.h conv-host *.o ./FoF/*.decl*.h ./FoF/*.def*.h Gravity SPH Collision FoFApp charmrun moduleinit*
