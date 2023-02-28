@@ -9,6 +9,8 @@
 /* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ Real max_timestep;
 /* readonly */ int peanoKey;
+/* readonly */ int leafNum;
+/* readonly */ int openNum;
 
 using namespace paratreet;
 
@@ -70,6 +72,9 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
+    CkPrintf("Starting traversal\n");
+    leafNum = 0;
+    openNum = 0;
     proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
   }
 

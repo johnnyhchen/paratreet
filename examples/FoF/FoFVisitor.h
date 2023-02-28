@@ -13,13 +13,14 @@
 // #include "FoF.h"
 
 extern CProxy_UnionFindLib libProxy;
-// template <typename Data>
-extern CProxy_Partition<CentroidData> partitionProxy;  // CentroidData
+extern CProxy_Partition<CentroidData> partitionProxy;
+extern int leafNum;
+extern int openNum;
 
 struct FoFVisitor {
 private:
 // TODO: make this variable command line arg (so can try options when running)
-  static constexpr const Real linkingLength = 0.2; // can't do static constexpr const Real like in CollisionVisitor.h
+  static constexpr const Real linkingLength = 0.00417; // 0.2; // can't do static constexpr const Real like in CollisionVisitor.h
 
 public:
   static constexpr const bool CallSelfLeaf = true;
@@ -32,6 +33,7 @@ public:
 
   // TODO: update with "FoFData" if we decide we need a more parred down version
   bool open(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
+    CkPrintf("open %d\n", openNum+=1);
     Real r_bucket = target.data.size_sm + linkingLength; // TODO: verify instead of max_rad, have 0.2 for FoF red sphere len
     if (!Space::intersect(source.data.box, target.data.box.center(), r_bucket*r_bucket))
       return false;
@@ -50,6 +52,7 @@ public:
   }
 
   void leaf(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
+    CkPrintf("leaf %d\n", leafNum+=1);
     for (int i = 0; i < target.n_particles; i++) {
       for (int j = 0; j < source.n_particles; j++) {
         const Particle& sp = source.particles()[j];

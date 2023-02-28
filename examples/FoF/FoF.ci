@@ -4,6 +4,10 @@ mainmodule FoF {
    
     readonly CProxy_UnionFindLib libProxy;
     readonly CProxy_Partition<CentroidData> partitionProxy;
+    readonly Real max_timestep;
+    readonly int peanoKey;
+    readonly int leafNum;
+    readonly int openNum;
 
     initnode void initialize(void);
 

@@ -185,10 +185,9 @@ public:
     CkPrintf("**Total Decomposition time: %.3lf ms\n",
         (CkWallTimer() - decomp_time) * 1000);
     
-    // Initialize UnionFind and populate vertices
+    // Initialize UnionFindLib
     libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
-    partitions.initializeLibVertices(CkCallbackResumeThread());
-    CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
+    CkPrintf("Initialized UnionFindLib with %d partitions\n", n_partitions);
   }
 
   // Core iterative loop of the simulation
@@ -224,6 +223,10 @@ public:
       CkWaitQD();
       CkPrintf("TreeCanopy cache loading: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
+      
+      // Populate Vertices for UnionFindLib
+      partitions.initializeLibVertices(CkCallbackResumeThread());
+      CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
 
       // Perform traversals
       start_time = CkWallTimer();

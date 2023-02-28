@@ -514,7 +514,9 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
       libVertices[i].parent = libVertices[i].vertexID;
 #endif
   }
+  //CkPrintf("Before ckLocal()");
   UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();  // get pointer to local copy of UnionFind lib
+  //CkPrintf("After ckLocal()");
   libPtr->initialize_vertices(libVertices, n_particles_on_partition);  // pass array of vertices we just created to union find lib
   // libPtr->registerGetLocationFromID(this->getLocationFromID);  // TODO: Do we need this? passes to UnionFindLib a method (getLocationFromID) that locates a vertex given the vertex id (returns chare vertex is on and place in the array on that chare)
   
