@@ -2,7 +2,7 @@ include ../src/Makefile.common
 
 LBS = CommonLBs PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB DistributedOrbLB
 LB_LIBS = $(foreach m, $(LBS), -module $(m))
-OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) -DANCHOR_ALGO
+OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) # -DANCHOR_ALGO
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 # how to add unionfind dependency to all applications? Use LBS var? 
 
@@ -43,22 +43,10 @@ Main.o: Main.C $(VISITORS) Main.decl.h
 moments.o: moments.C
 	$(CHARMC) -c $<
 
-# FoFMain.decl.h: ./FoF/FoFMain.ci $(DATA)
-# 	$(CHARMC) $<
-# 
-# FoFMain.o: ./FoF/FoFMain.C ./FoF/FoFVisitor.h FoFMain.decl.h
-# 	$(CHARMC) -c $<
-# 
-# FoF: ./FoFMain.decl.h ./FoFMain.o ./FoF.o ../src/libparatreet.a moments.o
-# 	$(CHARMC) -language charm++ $(LB_LIBS) -o ./FoF/FoF FoF.o $(LD_LIBS)
-# 
-# FoF.o: ./FoF/FoF.C ./FoFMain.decl.h
-# 	$(CHARMC) -c $<
-
 FoF.decl.h: ./FoF/FoF.ci $(DATA)
 	$(CHARMC) $<
 
-FoFApp: ./FoF.decl.h ./FoF.o ../src/libparatreet.a moments.o
+FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
 # todo test if the Visitor class should be included in the compiliation rule
