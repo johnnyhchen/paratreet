@@ -21,6 +21,7 @@ extern CProxy_TreeSpec treespec;
 extern CProxy_Reader readers;
 extern CProxy_ThreadStateHolder thread_state_holder;
 extern CProxy_UnionFindLib libProxy;
+extern int N_PARTITIONS;
 
 using namespace LBCommon;
 
@@ -79,6 +80,7 @@ struct Partition : public CBase_Partition<Data> {
     return;
   };
   void initializeLibVertices(const CkCallback &cb);
+  static std::pair<int, int> getLocationFromID(long int vid);
   void unionRequest(int sp_order, int tp_order);
   void getConnectedComponents(const CkCallback& cb);
 
@@ -495,61 +497,61 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
 // -------------------
 template <typename Data>
 void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
-  // don't want NUM_VERTICES (that's total number of vertices in universe) just want number of vertices for this partition
   int n_particles_on_partition = 0;
-  std::vector<Particle> particles;
+  std::vector<const Particle*> particles;
   for (auto && leaf : leaves) {
     n_particles_on_partition += leaf->n_particles;
-    for (int i = 0; i < leaf->n_particles; i++) {
-      particles.emplace_back(leaf->particles()[i]);
-    }
   }
   libVertices = new unionFindVertex[n_particles_on_partition];
 
-  for (int i = 0; i < n_particles_on_partition; i++) {
-      libVertices[i].vertexID = particles[i].order;
-#ifndef ANCHOR_ALGO
-      libVertices[i].parent = -1;  // init all vertices to have .parent = -1
-#else
-      libVertices[i].parent = libVertices[i].vertexID;
-#endif
+  int particles_so_far = 0;
+  for (auto && leaf : leaves) {
+    for (int i = 0; i < leaf->n_particles; i++) {
+      long vertexID = (this->thisIndex << 32) | particles_so_far;
+      leaf->setParticleVertexID(i, vertexID); 
+      libVertices[particles_so_far].vertexID = vertexID;
+      particles_so_far++;
+
+      #ifndef ANCHOR_ALGO
+      libVertices[particles_so_far].parent = -1;
+      #else
+      libVertices[particles_so_far].parent = libVertices[particles_so_far].vertexID;
+      #endif
+    }
   }
-  //CkPrintf("Before ckLocal()");
-  UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();  // get pointer to local copy of UnionFind lib
-  //CkPrintf("After ckLocal()");
-  libPtr->initialize_vertices(libVertices, n_particles_on_partition);  // pass array of vertices we just created to union find lib
-  // libPtr->registerGetLocationFromID(this->getLocationFromID);  // TODO: Do we need this? passes to UnionFindLib a method (getLocationFromID) that locates a vertex given the vertex id (returns chare vertex is on and place in the array on that chare)
-  
+
+  UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();
+  libPtr->initialize_vertices(libVertices, n_particles_on_partition);
+  libPtr->registerGetLocationFromID(getLocationFromID);
   this->contribute(cb);
 }
 
-// entry method call = inefficient. way to optimze? (TRQ)
+template <typename Data>
+std::pair<int, int> Partition<Data>::getLocationFromID(long int vid) {
+  CkPrintf("getLocationFromID\n"); // TODO: remove debugging printf
+  int chareIdx = (vid >> 32);
+  int arrIdx = vid & 0xffffffff;
+  return std::make_pair(chareIdx, arrIdx);
+}
+
 template <typename Data>
 void Partition<Data>::unionRequest(int sp_order, int tp_order) {
   libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
 }
 
-// TODO: does this have to be an entry method (or a member function at that) - if not remove "entry" function annotation from Paratreet.ci
+// Assigns component (group) number to particles after unions are performed between particles
 template <typename Data>
 void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
-  // get particles
-  int n_particles_on_partition = 0;
-  std::vector<Particle> particles;
+  int particles_so_far = 0;
   for (auto && leaf : leaves) {
-    n_particles_on_partition += leaf->n_particles;
     for (int i = 0; i < leaf->n_particles; i++) {
-      particles.emplace_back(leaf->particles()[i]);
+      // TODO: remove debugging printf
+      // CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, particles_so_far, libVertices[particles_so_far].vertexID, libVertices[particles_so_far].parent, libVertices[particles_so_far].componentNumber);
+      long groupID = libVertices[particles_so_far].vertexID;
+      leaf->setParticleGroupNumber(i, groupID);
+      particles_so_far++;
     }
   }
-  // need to make sure we get a pointer to the particles so we do not just modify the local particles copy here
-  // also need to make sure (somehow) that the order of the iterator is deterministic so when we go through leaves, add particles etc. the order will be the same (if we can't store vector of particle pointers as a field)
-  for (int i = 0; i < n_particles_on_partition; i++) {
-    // CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, i, libVertices[i].vertexID, libVertices[i].parent, libVertices[i].componentNumber);
-    // assign component number to saved particles
-    particles[i].group_number = libVertices[i].componentNumber;
-  }
-  // make this a callback and "getConnectedComponents()" to assign particles
-  // once you resumethread to FoF class, call .output() on partitions proxy as a broadcast
   this->contribute(cb);
 }
 
