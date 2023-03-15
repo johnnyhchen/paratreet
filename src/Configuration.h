@@ -122,6 +122,8 @@ namespace paratreet {
         int nReplicas;
         // Set a gravitational softening for all the particles
         double dSoft;
+        // Linking length for friends-of-friends algorithm
+        Real linking_length;
 
         // we support loading config files with "-x"
         Configuration(const char* config_arg = "-x")
@@ -150,6 +152,8 @@ namespace paratreet {
           this->register_field("dSoft", "e", dSoft);
           this->register_field("achInputFile", "f", input_file);
           this->register_field("achOutputFile", "v", output_file);
+          
+          this->register_field("linkingLength", "ll", linking_length);
         }
 
         int branchFactor() const {return branchFactorFromTreeType(tree_type);}
@@ -183,6 +187,7 @@ namespace paratreet {
             p | periodic;
             p | fPeriod;
             p | dSoft;
+            p | linking_length;
         }
     };
 

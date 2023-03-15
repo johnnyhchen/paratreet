@@ -1,13 +1,13 @@
 mainmodule FoF {
     extern module paratreet;
     extern module unionFindLib;
-   
+    readonly bool outputFileConfigured;
     readonly CProxy_UnionFindLib libProxy;
     readonly CProxy_Partition<CentroidData> partitionProxy;
     readonly Real max_timestep;
     readonly int peanoKey;
-    readonly int leafNum;
-    readonly int openNum;
+    readonly int N_PARTITIONS;
+    readonly Real LINKING_LENGTH;
 
     initnode void initialize(void);
 

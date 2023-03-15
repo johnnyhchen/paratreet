@@ -5,12 +5,13 @@
 #include "FoFVisitor.h"
 #include "FoF.decl.h"
 
+/* readonly */ bool outputFileConfigured;
 /* readonly */ CProxy_UnionFindLib libProxy;
 /* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ Real max_timestep;
 /* readonly */ int peanoKey;
-/* readonly */ int leafNum;
-/* readonly */ int openNum;
+/* readonly */ int N_PARTITIONS;
+/* readonly */ Real LINKING_LENGTH;
 
 using namespace paratreet;
 
@@ -19,9 +20,13 @@ static void initialize() {
 }
 
 class FoF : public paratreet::Main<CentroidData> { 
-  void main(CkArgMsg* m) override {    // Initialize readonly variables
-    max_timestep = 1e-5;
+  void main(CkArgMsg* m) override {
+    // Initialize readonly variables
+    outputFileConfigured = !conf.output_file.empty();
     peanoKey = 3;
+    max_timestep = 1e-5;
+    LINKING_LENGTH = conf.linking_length;
+    
 
     // Process command line arguments
     int c;
@@ -31,24 +36,54 @@ class FoF : public paratreet::Main<CentroidData> {
       switch (c) {
         case 'm':
           peanoKey = 0; // morton
-        break;
+          break;
         case 'j':
           max_timestep = atof(optarg);
           break;
+        
+        default:
+          CkPrintf("Usage: %s\n", m->argv[0]);
+          CkPrintf("\t-f [input file]\n");
+          CkPrintf("\t-n [number of treepieces]\n");
+          CkPrintf("\t-p [maximum number of particles per treepiece]\n");
+          CkPrintf("\t-l [maximum number of particles per leaf]\n");
+          CkPrintf("\t-d [decomposition type: oct, sfc, kd]\n");
+          CkPrintf("\t-t [tree type: oct, bin, kd]\n");
+          CkPrintf("\t-i [number of iterations]\n");
+          CkPrintf("\t-s [number of shared tree levels]\n");
+          CkPrintf("\t-u [flush period]\n");
+          CkPrintf("\t-r [flush threshold for Subtree max_average ratio]\n");
+          CkPrintf("\t-b [load balancing period]\n");
+          CkPrintf("\t-v [filename prefix]\n");
+          CkPrintf("\t-j [max timestep]\n");
+          CkPrintf("\t-ll [linking length]\n");
+          CkExit();
       }
     }
+    delete m;
+
+    // Print configuration
+    CkPrintf("\n[PARATREET]\n");
+    if (conf.input_file.empty()) CkAbort("Input file unspecified");
+    CkPrintf("Input file: %s\n", conf.input_file.c_str());
+    CkPrintf("Decomposition type: %s\n", paratreet::asString(conf.decomp_type).c_str());
+    CkPrintf("Tree type: %s\n", paratreet::asString(conf.tree_type).c_str());
+    CkPrintf("Minimum number of subtrees: %d\n", conf.min_n_subtrees);
+    CkPrintf("Minimum number of partitions: %d\n", conf.min_n_partitions);
+    CkPrintf("Maximum number of particles per leaf: %d\n", conf.max_particles_per_leaf);
+    CkPrintf("Linking length for friends-of-friends: %f\n", conf.linking_length);
+    
     //main::initializeDriver() will be run after main exits. After that main::run() is ran. See Paratreet.C::MainChare class
   }
 
 
   void setDefaults(void) {
-    // TODO: adjust values as needed
     conf.min_n_subtrees = CkNumPes() * 8; // default from ChaNGa
     conf.min_n_partitions = CkNumPes() * 8;
     conf.max_particles_per_leaf = 12; // default from ChaNGa
     conf.decomp_type = paratreet::DecompType::eBinaryOct;
     conf.tree_type = paratreet::TreeType::eBinaryOct;
-    conf.num_iterations = 1; // for FoF, only 1 iteration
+    conf.num_iterations = 1;
     conf.num_share_nodes = 0; // 3;
     conf.cache_share_depth = 3;
     conf.pool_elem_size;
@@ -63,57 +98,43 @@ class FoF : public paratreet::Main<CentroidData> {
   // Traversal functions
   // -------------------
   void preTraversalFn(ProxyPack<CentroidData>& proxy_pack) override {
-    // tells the Driver to load the Cache Manager with a starter pack of data, specified in Configuration.cache_share_depth
+    // The size of the starter pack of data loaded by the cache manager is specified in Configuration.cache_share_depth
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
     
-    // store proxies for use in FoFVisitor
     libProxy = proxy_pack.libProxy;
     partitionProxy = proxy_pack.partition;
+
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    CkPrintf("Starting traversal\n");
-    leafNum = 0;
-    openNum = 0;
+    // TODO: figure out how to get the actual number of partitions we need
+    N_PARTITIONS = 12; 
+
     proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
   }
 
-  //template <typename Data>
   void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    // output results from UnionFind for halos somehow
-    // what data format should we output?
-
-    // CkCallback cb(CkIndex_Main::done(), mainProxy);
-    partitionProxy.ckGetArrayID();
+    CkPrintf("[Main] Inverted trees constructed for unionFindLib. Performing components detection");
+    int startTime = CkWallTimer();
     libProxy.find_components(CkCallbackResumeThread());
-    // print libProxy results: to access results, iterate through libVertices (externed above, remove if we don't access in this file)
-    // TODO: figure out output format: what format to print to and what API (see Writer.h)
+
+    CkPrintf("[Main] Components identified, prune unecessary ones now\n");
+    CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()- startTime);
+    int minVerticesPerComponent = 1;
+    libProxy.prune_components(minVerticesPerComponent, CkCallbackResumeThread());
+
     partitionProxy.getConnectedComponents(CkCallbackResumeThread());
-    paratreet::outputParticleAccelerations(universe, partitionProxy);
+    
+    if (iter == 0 && outputFileConfigured) {
+      paratreet::outputParticleAccelerations(universe, partitionProxy);
+    }
   }
 
-  // TODO: Figure out what prune components means
-  /*
-  void doneFindComponents() {
-      CkPrintf("[Main] Components identified, prune unecessary ones now\n");
-      CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()- start_time);
-      // callback for library to report to after pruning
-      CkCallback cb(CkIndex_TreePiece::requestVertices(), partitions); // TODO: define requestVertices() function in Partitions.h
-      libProxy.prune_components(1, cb);  // can imagine will prune_components that i.e. have only 1 element. also reports # of components in parent tree (see UnionFindLib.C)
-      // requestVertices() called when prune_components done
-  }
-
-  void donePrinting() {
-    // print output here
-    partitionProxy.getConnectedComponents();
-  }
-  */
   Real getTimestep(BoundingBox& universe, Real max_velocity) {
     Real universe_box_len = universe.box.greater_corner.x - universe.box.lesser_corner.x;
     Real temp = universe_box_len / max_velocity / std::cbrt(universe.n_particles);
     return std::min(temp, max_timestep);
   }
-
 
   void run() {
     driver.run(CkCallbackResumeThread());
