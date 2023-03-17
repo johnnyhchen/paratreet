@@ -10,7 +10,6 @@
 /* readonly */ CProxy_Partition<CentroidData> partitionProxy;
 /* readonly */ Real max_timestep;
 /* readonly */ int peanoKey;
-/* readonly */ int N_PARTITIONS;
 /* readonly */ Real LINKING_LENGTH;
 
 using namespace paratreet;
@@ -26,7 +25,6 @@ class FoF : public paratreet::Main<CentroidData> {
     peanoKey = 3;
     max_timestep = 1e-5;
     LINKING_LENGTH = conf.linking_length;
-    
 
     // Process command line arguments
     int c;
@@ -107,9 +105,6 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    // TODO: figure out how to get the actual number of partitions we need
-    N_PARTITIONS = 12; 
-
     proxy_pack.partition.template startDown<FoFVisitor>(FoFVisitor());
   }
 

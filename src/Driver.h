@@ -24,9 +24,6 @@
 #include "Writer.h"
 #include "Subtree.h"
 #include "unionFindLib.h"
-//#include "FoF.h"
-
-// #include "Partition.h"
 
 extern CProxy_Reader readers;
 extern CProxy_TreeSpec treespec;
@@ -185,7 +182,7 @@ public:
     CkPrintf("**Total Decomposition time: %.3lf ms\n",
         (CkWallTimer() - decomp_time) * 1000);
     
-    // Initialize UnionFindLib
+    // Initialize UnionFindLib for FoF
     libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
     CkPrintf("Initialized UnionFindLib with %d partitions\n", n_partitions);
   }
@@ -224,7 +221,7 @@ public:
       CkPrintf("TreeCanopy cache loading: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
       
-      // Populate Vertices for UnionFindLib
+      // Populate UnionFindLib Vertices for FoF
       partitions.initializeLibVertices(CkCallbackResumeThread());
       CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
 

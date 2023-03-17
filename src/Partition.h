@@ -13,15 +13,12 @@
 #include "paratreet.decl.h"
 #include "LBCommon.h"
 #include "unionFindLib.h"
-// #include "CentroidData.h"
-// #include "FoF.h"
 
 CkpvExtern(int, _lb_obj_index);
 extern CProxy_TreeSpec treespec;
 extern CProxy_Reader readers;
 extern CProxy_ThreadStateHolder thread_state_holder;
 extern CProxy_UnionFindLib libProxy;
-extern int N_PARTITIONS;
 
 using namespace LBCommon;
 
@@ -38,9 +35,7 @@ struct Partition : public CBase_Partition<Data> {
 
   std::map<int, std::vector<Key>> lookup_leaf_keys;
 
-  unionFindVertex *libVertices; // TODO: check if this should be a field in the Partition struct (probably)
-
-  // filled in during traversal
+  unionFindVertex *libVertices;
 
   CProxy_TreeCanopy<Data> tc_proxy;
   CProxy_CacheManager<Data> cm_proxy;

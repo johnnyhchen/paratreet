@@ -6,7 +6,6 @@ mainmodule FoF {
     readonly CProxy_Partition<CentroidData> partitionProxy;
     readonly Real max_timestep;
     readonly int peanoKey;
-    readonly int N_PARTITIONS;
     readonly Real LINKING_LENGTH;
 
     initnode void initialize(void);
