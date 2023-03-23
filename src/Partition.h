@@ -75,7 +75,7 @@ struct Partition : public CBase_Partition<Data> {
     return;
   };
   void initializeLibVertices(const CkCallback &cb);
-  static std::pair<int, int> getLocationFromID(long int vid);
+  static std::pair<int, int> getLocationFromID(uint64_t vid);
   void unionRequest(int sp_order, int tp_order);
   void getConnectedComponents(const CkCallback& cb);
 
@@ -502,16 +502,16 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   int particles_so_far = 0;
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {
-      long vertexID = (this->thisIndex << 32) | particles_so_far;
-      leaf->setParticleVertexID(i, vertexID); 
+      uint64_t vertexID = (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+      leaf->setParticleVertexID(i, vertexID);
       libVertices[particles_so_far].vertexID = vertexID;
-      particles_so_far++;
 
       #ifndef ANCHOR_ALGO
       libVertices[particles_so_far].parent = -1;
       #else
       libVertices[particles_so_far].parent = libVertices[particles_so_far].vertexID;
       #endif
+      particles_so_far++;
     }
   }
 
@@ -522,17 +522,17 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
 }
 
 template <typename Data>
-std::pair<int, int> Partition<Data>::getLocationFromID(long int vid) {
-  CkPrintf("getLocationFromID\n"); // TODO: remove debugging printf
+std::pair<int, int> Partition<Data>::getLocationFromID(uint64_t vid) {
+  // CkPrintf("getLocationFromID\n"); // TODO: remove debugging printf
   int chareIdx = (vid >> 32);
   int arrIdx = vid & 0xffffffff;
   return std::make_pair(chareIdx, arrIdx);
 }
-
+/*
 template <typename Data>
 void Partition<Data>::unionRequest(int sp_order, int tp_order) {
   libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
-}
+}*/
 
 // Assigns component (group) number to particles after unions are performed between particles
 template <typename Data>

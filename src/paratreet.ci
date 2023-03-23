@@ -104,7 +104,7 @@ module paratreet {
     entry void applyOpposingEffects(std::vector<std::pair<Key, std::pair<Vector3D<Real>, Real>>> effects);
     // UnionFindLib functions
     entry void initializeLibVertices(const CkCallback &cb);
-    entry void unionRequest(int sp_order, int tp_order);
+    //entry void unionRequest(int sp_order, int tp_order);
     entry void getConnectedComponents(const CkCallback& cb);
   }
 

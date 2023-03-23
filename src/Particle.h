@@ -25,7 +25,7 @@ struct Particle {
   // FoF: add a field to store component number in UnionFind (groupId)
   // postIterationFn loo
   long int group_number;
-  long int vertex_id; // vertexID of current particle in unionFindLib
+  uint64_t vertex_id; // vertexID of current particle in unionFindLib
 
   enum class Type : char {
     eStar = 1,
