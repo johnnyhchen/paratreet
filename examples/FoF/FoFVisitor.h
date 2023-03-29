@@ -50,7 +50,7 @@ public:
         // union two particles if source and target particles linking length spheres intersect. avoid union of same pair twice by comapring particle orders (ID)
         if (distance < LINKING_LENGTH && sp.order < tp.order) {
           CkPrintf("union_requst on vid1=%ld, vid2=%ld\n", sp.order, tp.order); // TODO: remove debugging printf
-          partitionProxy[tp.partition_idx].unionRequest(sp.order, tp.order);
+          libProxy[tp.partition_idx].ckLocal()->union_request(sp.vertex_id, tp.vertex_id);
         }
       }
     }

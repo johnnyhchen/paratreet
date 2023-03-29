@@ -57,4 +57,4 @@ test: all
 	./charmrun ./Gravity -f $(BASE_PATH)/inputgen/100k.tipsy -d sfc +p3 ++ppn 3 +pemap 1-3 +commap 0 ++local
 
 clean:
-	rm -f *.decl*.h *.def*.h conv-host *.o ./FoF/*.decl*.h ./FoF/*.def*.h Gravity SPH Collision FoFApp charmrun moduleinit*
+	rm -f *.decl*.h *.def*.h conv-host *.o ./FoF/*.decl*.h ./FoF/*.def*.h Gravity SPH Collision FoFApp* charmrun* moduleinit*

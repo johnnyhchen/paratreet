@@ -540,9 +540,8 @@ void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
   int particles_so_far = 0;
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {
-      // TODO: remove debugging printf
-      // CkPrintf("[tp%d] myVertices[%d] - vertexID: %ld, parent: %ld, component: %d\n", this->thisIndex, particles_so_far, libVertices[particles_so_far].vertexID, libVertices[particles_so_far].parent, libVertices[particles_so_far].componentNumber);
-      long groupID = libVertices[particles_so_far].vertexID;
+      long startingGroupNumberOffset = 1;  // so particles that are not part of a cluster have groupID 0 (currently -1 in unionFind implementation)
+      long groupID = libVertices[particles_so_far].componentNumber + startingGroupNumberOffset;
       leaf->setParticleGroupNumber(i, groupID);
       particles_so_far++;
     }

@@ -109,20 +109,20 @@ class FoF : public paratreet::Main<CentroidData> {
   }
 
   void postIterationFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {
-    CkPrintf("[Main] Inverted trees constructed for unionFindLib. Performing components detection");
+    CkPrintf("[Main] Inverted trees constructed for unionFindLib. Performing components detection\n");
     int startTime = CkWallTimer();
     libProxy.find_components(CkCallbackResumeThread());
 
     CkPrintf("[Main] Components identified, prune unecessary ones now\n");
     CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()- startTime);
-    int minVerticesPerComponent = 1;
+    int minVerticesPerComponent = 1; // strictly greater than
     libProxy.prune_components(minVerticesPerComponent, CkCallbackResumeThread());
 
     partitionProxy.getConnectedComponents(CkCallbackResumeThread());
     
-    if (iter == 0 && outputFileConfigured) {
-      paratreet::outputParticleAccelerations(universe, partitionProxy);
-    }
+    //if (iter == 0 && outputFileConfigured) {
+    paratreet::outputParticleAccelerations(universe, partitionProxy);
+    //}
   }
 
   Real getTimestep(BoundingBox& universe, Real max_velocity) {

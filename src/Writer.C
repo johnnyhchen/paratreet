@@ -49,7 +49,7 @@ void Writer::do_write()
       fp = CmiFopen((output_file+".acc").c_str(), "a");
       fpDen = CmiFopen((output_file+".den").c_str(), "a");
       fpPres = CmiFopen((output_file+".pres").c_str(), "a");
-      fpGrp = CmiFopen((output_file+".grp").c_str(), "s");
+      fpGrp = CmiFopen((output_file+".grp").c_str(), "a");
   }
   CkAssert(fp);
   CkAssert(fpDen);
