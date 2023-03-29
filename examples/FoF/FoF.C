@@ -11,6 +11,7 @@
 /* readonly */ Real max_timestep;
 /* readonly */ int peanoKey;
 /* readonly */ Real LINKING_LENGTH;
+/* readonly */ int MIN_VERTICES_PER_COMPONENT; // strictly greater than
 
 using namespace paratreet;
 
@@ -25,6 +26,8 @@ class FoF : public paratreet::Main<CentroidData> {
     peanoKey = 3;
     max_timestep = 1e-5;
     LINKING_LENGTH = conf.linking_length;
+    int defaultMinVerticesPerComponent = 8;
+    MIN_VERTICES_PER_COMPONENT = conf.min_vertices_per_component == 0 ? defaultMinVerticesPerComponent : conf.min_vertices_per_component;
 
     // Process command line arguments
     int c;
@@ -70,6 +73,7 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("Minimum number of partitions: %d\n", conf.min_n_partitions);
     CkPrintf("Maximum number of particles per leaf: %d\n", conf.max_particles_per_leaf);
     CkPrintf("Linking length for friends-of-friends: %f\n", conf.linking_length);
+    CkPrintf("Minimum vertices per group for friends-of-friends is strictly greater than: %d\n", MIN_VERTICES_PER_COMPONENT);
     
     //main::initializeDriver() will be run after main exits. After that main::run() is ran. See Paratreet.C::MainChare class
   }
@@ -115,8 +119,8 @@ class FoF : public paratreet::Main<CentroidData> {
 
     CkPrintf("[Main] Components identified, prune unecessary ones now\n");
     CkPrintf("[Main] Components detection time: %f\n", CkWallTimer()- startTime);
-    int minVerticesPerComponent = 1; // strictly greater than
-    libProxy.prune_components(minVerticesPerComponent, CkCallbackResumeThread());
+    // min vertices per component is strictly greater than MIN_VERTICES_PER_COMPONENT
+    libProxy.prune_components(MIN_VERTICES_PER_COMPONENT, CkCallbackResumeThread());
 
     partitionProxy.getConnectedComponents(CkCallbackResumeThread());
     

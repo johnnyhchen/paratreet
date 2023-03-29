@@ -7,6 +7,7 @@ mainmodule FoF {
     readonly Real max_timestep;
     readonly int peanoKey;
     readonly Real LINKING_LENGTH;
+    readonly int MIN_VERTICES_PER_COMPONENT; // strictly greater than
 
     initnode void initialize(void);
 
