@@ -14,7 +14,7 @@
 
 extern CProxy_UnionFindLib libProxy;
 extern CProxy_Partition<CentroidData> partitionProxy;
-extern Real LINKING_LENGTH;
+extern Real linkingLength;
 
 struct FoFVisitor {
 public:
@@ -26,13 +26,13 @@ public:
   }
 
   bool open(const SpatialNode<CentroidData>& source, SpatialNode<CentroidData>& target) {
-    Real r_bucket = target.data.size_sm + LINKING_LENGTH;
+    Real r_bucket = target.data.size_sm + linkingLength;
     if (!Space::intersect(source.data.box, target.data.box.center(), r_bucket*r_bucket))
       return false;
 
     // Check if any of the target balls intersect the source volume
     for (int i = 0; i < target.n_particles; i++) {
-      Real ballSq = LINKING_LENGTH * LINKING_LENGTH;
+      Real ballSq = linkingLength * linkingLength;
       if(Space::intersect(source.data.box, target.particles()[i].position, ballSq))
         return true;
     }
@@ -48,9 +48,10 @@ public:
         const Particle& tp = target.particles()[i];
         Real distance = (tp.position - sp.position).length();
         // union two particles if source and target particles linking length spheres intersect. avoid union of same pair twice by comapring particle orders (ID)
-        if (distance < LINKING_LENGTH && sp.order < tp.order) {
-          CkPrintf("union_requst on vid1=%ld, vid2=%ld\n", sp.order, tp.order); // TODO: remove debugging printf
+        if (distance < linkingLength && sp.order < tp.order) {
+          // CkPrintf("union_requst on vid1=%ld, vid2=%ld\n", sp.order, tp.order); // TODO: remove debugging printf
           libProxy[tp.partition_idx].ckLocal()->union_request(sp.vertex_id, tp.vertex_id);
+          //partitionProxy[tp.partition_idx].ckLocal()->unionRequest(sp.vertex_id, tp.vertex_id);
         }
       }
     }

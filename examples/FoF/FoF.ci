@@ -4,10 +4,9 @@ mainmodule FoF {
     readonly bool outputFileConfigured;
     readonly CProxy_UnionFindLib libProxy;
     readonly CProxy_Partition<CentroidData> partitionProxy;
-    readonly Real max_timestep;
     readonly int peanoKey;
-    readonly Real LINKING_LENGTH;
-    readonly int MIN_VERTICES_PER_COMPONENT; // strictly greater than
+    readonly Real linkingLength;
+    readonly int minVerticesPerComponent; // strictly greater than
 
     initnode void initialize(void);
 

@@ -528,11 +528,11 @@ std::pair<int, int> Partition<Data>::getLocationFromID(uint64_t vid) {
   int arrIdx = vid & 0xffffffff;
   return std::make_pair(chareIdx, arrIdx);
 }
-/*
+
 template <typename Data>
 void Partition<Data>::unionRequest(int sp_order, int tp_order) {
   libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
-}*/
+}
 
 // Assigns component (group) number to particles after unions are performed between particles
 template <typename Data>
