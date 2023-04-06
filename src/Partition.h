@@ -75,6 +75,7 @@ struct Partition : public CBase_Partition<Data> {
     return;
   };
   void initializeLibVertices(const CkCallback &cb);
+  inline uint64_t encodeChareAndArrayIndex(int particles_so_far);
   static std::pair<int, int> getLocationFromID(uint64_t vid);
   void unionRequest(int sp_order, int tp_order);
   void getConnectedComponents(const CkCallback& cb);
@@ -502,7 +503,8 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   int particles_so_far = 0;
   for (auto && leaf : leaves) {
     for (int i = 0; i < leaf->n_particles; i++) {
-      uint64_t vertexID = (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+      // encodes chare index and array index into vertexID
+      uint64_t vertexID = encodeChareAndArrayIndex(particles_so_far);
       leaf->setParticleVertexID(i, vertexID);
       libVertices[particles_so_far].vertexID = vertexID;
 
@@ -521,17 +523,41 @@ void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   this->contribute(cb);
 }
 
+/**
+ * @brief given the overall sequential order of the particle on this partition,
+ * returns a vertexID encoding the vertex's location (chare and array index)
+ * 
+ * returns a vertexID that encodes
+ * the chare index of the vertex in the 32 most significant bits
+ * and the local array index of the vertex in the 32 least significant bits
+ * The vertex is stored locally in the myVertices array of unionfind
+ * and has index equal to the overall sequential order of the particle
+ * on this partition
+ * 
+ * @param particles_so_far overall sequential order of the particle
+ * on this partition
+ * 
+ * @return uint64_t vertexID encoding location of vertex
+ */
+template <typename Data>
+inline uint64_t Partition<Data>::encodeChareAndArrayIndex(int particles_so_far) {
+  return (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+}
+
+/**
+ * @brief decodes a vertexID and returns its location (chare and array index)
+ * 
+ * @param vid the ID of a vertex. Assumes it is of type uint64_t
+ * @return std::pair<int, int> 
+ */
+// Used with unionFindLib. Given a vertexID, returns the chare index and local array index where the particle (vertex) is stored
+// Assumes parameter vid stores the chare index in the 32 most significant bits and the array index in the 32 least significant bits
 template <typename Data>
 std::pair<int, int> Partition<Data>::getLocationFromID(uint64_t vid) {
-  // CkPrintf("getLocationFromID\n"); // TODO: remove debugging printf
+  // decodes chare index and array index from vertexID
   int chareIdx = (vid >> 32);
   int arrIdx = vid & 0xffffffff;
   return std::make_pair(chareIdx, arrIdx);
-}
-
-template <typename Data>
-void Partition<Data>::unionRequest(int sp_order, int tp_order) {
-  libProxy[this->thisIndex].ckLocal()->union_request(sp_order, tp_order);
 }
 
 // Assigns component (group) number to particles after unions are performed between particles

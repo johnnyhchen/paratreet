@@ -18,7 +18,7 @@ static void initialize() {
   BoundingBox::registerReducer();
 }
 
-class FoF : public paratreet::Main<CentroidData> { 
+class FoF : public paratreet::Main<CentroidData> {
   void main(CkArgMsg* m) override {
     // Initialize readonly variables
     if (conf.input_file.empty()) 
@@ -105,9 +105,9 @@ class FoF : public paratreet::Main<CentroidData> {
     // The size of the starter pack of data loaded by the cache manager is specified in Configuration.cache_share_depth
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
     
+    // Store proxies as global variables for access
     libProxy = proxy_pack.libProxy;
     partitionProxy = proxy_pack.partition;
-
   }
 
   void traversalFn(BoundingBox& universe, ProxyPack<CentroidData>& proxy_pack, int iter) override {

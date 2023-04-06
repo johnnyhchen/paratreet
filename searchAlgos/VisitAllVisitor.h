@@ -40,4 +40,4 @@ public:
 private:
 };
 
-#endif // PARATREET_COLLISIONVISITOR_H_
+#endif // PARATREET_VISITALLVISITOR_H_

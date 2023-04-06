@@ -102,9 +102,9 @@ module paratreet {
     entry void pauseForLB();
     entry void requestParticleUpdates(int cm_index, std::vector<Key> pKeys);
     entry void applyOpposingEffects(std::vector<std::pair<Key, std::pair<Vector3D<Real>, Real>>> effects);
-    // UnionFindLib functions
+    
+    // FoF functions
     entry void initializeLibVertices(const CkCallback &cb);
-    entry void unionRequest(int sp_order, int tp_order);
     entry void getConnectedComponents(const CkCallback& cb);
   }
 

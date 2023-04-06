@@ -1,4 +1,4 @@
-#ifndef PARATREET_FOFVISITOR_H_ // does this macro need to be defined in some configeration file as well? J.C.
+#ifndef PARATREET_FOFVISITOR_H
 #define PARATREET_FOFVISITOR_H_
 
 #include "paratreet.decl.h"
@@ -10,7 +10,6 @@
 #include <queue>
 #include "unionFindLib.h"
 #include "Partition.h"
-// #include "FoF.h"
 
 extern CProxy_UnionFindLib libProxy;
 extern CProxy_Partition<CentroidData> partitionProxy;
@@ -47,11 +46,10 @@ public:
         const Particle& sp = source.particles()[j];
         const Particle& tp = target.particles()[i];
         Real distance = (tp.position - sp.position).length();
-        // union two particles if source and target particles linking length spheres intersect. avoid union of same pair twice by comapring particle orders (ID)
+        // union two particles if source and target particles linking length spheres intersect. 
+        // avoid union of same pair twice by comapring particle order (the particle ID) with "<"
         if (distance < linkingLength && sp.order < tp.order) {
-          // CkPrintf("union_requst on vid1=%ld, vid2=%ld\n", sp.order, tp.order); // TODO: remove debugging printf
           libProxy[tp.partition_idx].ckLocal()->union_request(sp.vertex_id, tp.vertex_id);
-          //partitionProxy[tp.partition_idx].ckLocal()->unionRequest(sp.vertex_id, tp.vertex_id);
         }
       }
     }
