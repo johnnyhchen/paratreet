@@ -1,6 +1,7 @@
 include Makefile.common
 
-OPTS = -g -Ofast $(INCLUDES) -DDEBUG=0 $(MAKE_OPTS) #-DANCHOR_ALGO
+# comment out -DFOF if not using FoF to not waste runtime
+OPTS = -g -Ofast $(INCLUDES) -DDEBUG=0 $(MAKE_OPTS) -DFOF
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
 OBJS = Paratreet.o Loadable.o Reader.o Writer.o Particle.o BoundingBox.o Decomposition.o Modularization.o TreeSpec.o ThreadStateHolder.o

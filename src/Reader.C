@@ -11,7 +11,6 @@ Reader::Reader() : particle_index(0) {}
 void Reader::load(std::string input_file, const CkCallback& cb) {
   
 
-  // TODO: need to catch error here I think
   try {
     // Open tipsy file
     Tipsy::TipsyReader r(input_file);

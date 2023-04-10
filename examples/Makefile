@@ -1,11 +1,12 @@
 include ../src/Makefile.common
 
+# comment out -DFOF if not using FoF to not waste runtime
 LBS = CommonLBs PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB DistributedOrbLB
 LB_LIBS = $(foreach m, $(LBS), -module $(m))
-OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS)# -DANCHOR_ALGO
+OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) -DFOF
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
 
-all: Gravity SPH Collision FoF
+all: Gravity SPH Collision
 DATA = CentroidData.h MultipoleMoments.h
 VISITORS = DensityVisitor.h PressureVisitor.h GravityVisitor.h CollisionVisitor.h
 
@@ -46,10 +47,10 @@ FoF.decl.h: ./FoF/FoF.ci $(DATA)
 	$(CHARMC) $<
 
 FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
-	$(CHARMC) -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
+	$(CHARMC) -DFOF -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
 FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h
-	$(CHARMC) -c $<
+	$(CHARMC) -DFOF -c $<
 
 test: all
 	./charmrun ./Gravity -f $(BASE_PATH)/inputgen/100k.tipsy -d sfc +p3 ++ppn 3 +pemap 1-3 +commap 0 ++local

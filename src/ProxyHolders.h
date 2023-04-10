@@ -59,8 +59,6 @@ struct DPHolder {
 template <typename Data>
 class CProxy_CacheManager;
 
-// note: don't need holder class for unionFind (Tom thinks)
-
 template <typename Data>
 struct ProxyPack {
   CProxy_Driver<Data> driver;

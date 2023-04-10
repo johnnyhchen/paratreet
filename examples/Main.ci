@@ -1,5 +1,6 @@
 mainmodule Main {
     extern module paratreet;
+    extern module unionFindLib;
 
     readonly bool verify;
     readonly bool dual_tree;
@@ -11,6 +12,9 @@ mainmodule Main {
     readonly int iter_start_collision;
     readonly Real max_timestep;
     readonly CProxy_EwaldData ewaldProxy;
+
+    // only included here so code will compile properly without FoF, not used
+    readonly CProxy_UnionFindLib libProxy;
 
     initnode void initialize(void);
 

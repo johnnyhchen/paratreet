@@ -491,6 +491,7 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
 // -------------------
 // Friends-of-Friends (FoF) functions
 // -------------------
+#ifdef FOF
 /**
  * @brief Initializes an instance of unionFindLib by reading in all particles
  * stored on this partition. Must be called after partitions are initialized
@@ -586,5 +587,6 @@ void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
   }
   this->contribute(cb);
 }
+#endif // FOF
 
 #endif /* _PARTITION_H_ */
