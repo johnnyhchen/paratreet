@@ -76,7 +76,8 @@ class FoF : public paratreet::Main<CentroidData> {
     CkPrintf("Linking length for friends-of-friends: %f\n", conf.linking_length);
     CkPrintf("Minimum vertices per group for friends-of-friends is strictly greater than: %d\n", minVerticesPerComponent);
     
-    //main::initializeDriver() will be run after main exits. After that main::run() is ran. See Paratreet.C::MainChare class
+    // main::initializeDriver() will be run after main exits
+    // After that main::run() is ran. See Paratreet.C::MainChare class
   }
 
 
@@ -102,7 +103,8 @@ class FoF : public paratreet::Main<CentroidData> {
   // Traversal functions
   // -------------------
   void preTraversalFn(ProxyPack<CentroidData>& proxy_pack) override {
-    // The size of the starter pack of data loaded by the cache manager is specified in Configuration.cache_share_depth
+    // The size of the starter pack of data loaded by the cache manager is
+    // specified in Configuration.cache_share_depth
     proxy_pack.driver.loadCache(CkCallbackResumeThread());
     
     // Store proxies as global variables for access

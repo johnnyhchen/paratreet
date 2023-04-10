@@ -2,9 +2,8 @@ include ../src/Makefile.common
 
 LBS = CommonLBs PrefixLB OrbLB #AverageSmoothLB DiffusionLB DistributedPrefixLB DistributedOrbLB
 LB_LIBS = $(foreach m, $(LBS), -module $(m))
-OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS) # -DANCHOR_ALGO
+OPTS = -g -O3 $(INCLUDES) -DCOUNT_INTERACTIONS=0 -DDEBUG=0 -DHEXADECAPOLE $(MAKE_OPTS)# -DANCHOR_ALGO
 CHARMC = $(CHARM_HOME)/bin/charmc $(OPTS)
-# how to add unionfind dependency to all applications? Use LBS var? 
 
 all: Gravity SPH Collision FoF
 DATA = CentroidData.h MultipoleMoments.h
@@ -49,8 +48,7 @@ FoF.decl.h: ./FoF/FoF.ci $(DATA)
 FoFApp: FoF.decl.h FoF.o ../src/libparatreet.a moments.o
 	$(CHARMC) -language charm++ $(LB_LIBS) -o FoFApp FoF.o moments.o $(LD_LIBS)
 
-# todo test if the Visitor class should be included in the compiliation rule
-FoF.o: ./FoF/FoF.C ./FoF/FoFVisitor.h ./FoF.decl.h
+FoF.o: ./FoF/FoF.C ./FoF.decl.h ./FoF/FoFVisitor.h
 	$(CHARMC) -c $<
 
 test: all

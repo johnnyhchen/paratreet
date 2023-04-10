@@ -491,6 +491,13 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
 // -------------------
 // Friends-of-Friends (FoF) functions
 // -------------------
+/**
+ * @brief Initializes an instance of unionFindLib by reading in all particles
+ * stored on this partition. Must be called after partitions are initialized
+ * with particles
+ * 
+ * @param cb the callback that will be invoked when this function finishes
+ */
 template <typename Data>
 void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
   int n_particles_on_partition = 0;
@@ -560,7 +567,12 @@ std::pair<int, int> Partition<Data>::getLocationFromID(uint64_t vid) {
   return std::make_pair(chareIdx, arrIdx);
 }
 
-// Assigns component (group) number to particles after unions are performed between particles
+/**
+ * @brief Assigns component (group) number to particles after unions are
+ * performed between all particles on this partition
+ * 
+ * @param cb Callback to execute after function finishes executing
+ */
 template <typename Data>
 void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
   int particles_so_far = 0;
