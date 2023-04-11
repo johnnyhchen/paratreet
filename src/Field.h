@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cstring>
 #include <pup_stl.h>
+#include "common.h"
 
 namespace paratreet {
 
@@ -92,6 +93,19 @@ class Field : public GenericField {
     FieldConverter<T> op;
     new (this->storage_) T(op(val));
   }
+};
+
+template<>
+struct FieldConverter<Real> {
+  #ifndef USE_DOUBLE_FP
+  float operator()(const char* val) {
+    return strtof(val, NULL);
+  }
+  #else
+  double operator()(const char* val) {
+    return atof(val);
+  }
+  #endif
 };
 
 template<>

@@ -1,0 +1,14 @@
+mainmodule FoF {
+    extern module paratreet;
+    extern module unionFindLib;
+    readonly bool outputFileConfigured;
+    readonly CProxy_UnionFindLib libProxy;
+    readonly CProxy_Partition<CentroidData> partitionProxy;
+    readonly int peanoKey;
+    readonly Real linkingLength;
+    readonly int minVerticesPerComponent; // strictly greater than
+
+    initnode void initialize(void);
+
+    extern entry void Partition<CentroidData> startDown<FoFVisitor> (FoFVisitor v);
+}

@@ -23,6 +23,7 @@
 #include "Node.h"
 #include "Writer.h"
 #include "Subtree.h"
+#include "unionFindLib.h"
 
 extern CProxy_Reader readers;
 extern CProxy_TreeSpec treespec;
@@ -43,6 +44,7 @@ public:
   int n_partitions;
   double start_time;
   std::vector<int> partition_locations;
+  CProxy_UnionFindLib libProxy;
 
   Driver(CProxy_CacheManager<Data> cache_manager_, CProxy_Resumer<Data> resumer_, CProxy_TreeCanopy<Data> calculator_) :
     cache_manager(cache_manager_), resumer(resumer_), calculator(calculator_), storage_sorted(false) {}
@@ -134,6 +136,8 @@ public:
       );
     CkPrintf("Created %d Partitions: %.3lf ms\n", n_partitions,
         (CkWallTimer() - start_time) * 1000);
+    // Storing partition proxy for global access for FoF
+    // partitionProxy<Data> = partitions;
 
     start_time = CkWallTimer();
     readers.assignPartitions(n_partitions, partitions);
@@ -177,6 +181,12 @@ public:
         (CkWallTimer() - start_time) * 1000);
     CkPrintf("**Total Decomposition time: %.3lf ms\n",
         (CkWallTimer() - decomp_time) * 1000);
+    
+    #ifdef FOF
+    // Initialize UnionFindLib for FoF
+    libProxy = UnionFindLib::unionFindInit(partitions, n_partitions);
+    CkPrintf("Initialized UnionFindLib with %d partitions\n", n_partitions);
+    #endif // FOF
   }
 
   // Core iterative loop of the simulation
@@ -203,7 +213,11 @@ public:
       Real max_velocity = *(Real*)(res[0].data); // avoid max_velocity = 0.0
       Real timestep_size = paratreet::getTimestep(universe, max_velocity);
 
-      ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager);
+      #ifdef FOF
+      ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, libProxy);
+      #else
+      ProxyPack<Data> proxy_pack (this->thisProxy, subtrees, partitions, cache_manager, NULL);
+      #endif // FOF
 
       // Prefetch into cache
       start_time = CkWallTimer();
@@ -212,6 +226,12 @@ public:
       CkWaitQD();
       CkPrintf("TreeCanopy cache loading: %.3lf ms\n",
           (CkWallTimer() - start_time) * 1000);
+
+      #ifdef FOF
+      // Populate UnionFindLib Vertices for FoF
+      partitions.initializeLibVertices(CkCallbackResumeThread());
+      CkPrintf("Initialized %d vertices in UnionFindLib\n", universe.n_particles);
+      #endif // FOF      
 
       // Perform traversals
       start_time = CkWallTimer();

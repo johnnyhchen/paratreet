@@ -30,10 +30,11 @@ void Writer::write(CkCallback cb)
 
 void Writer::do_write()
 {
-  // Write particle accelerations to output file
+  // Write particle accelerations and other quantities to output file
   FILE *fp;
   FILE *fpDen;
   FILE *fpPres;
+  FILE *fpGrp;
   if (thisIndex == 0 && cur_dim == 0) {
     fp = CmiFopen((output_file+".acc").c_str(), "w");
     fprintf(fp, "%d\n", total_particles);
@@ -41,14 +42,22 @@ void Writer::do_write()
     fprintf(fpDen, "%d\n", total_particles);
     fpPres = CmiFopen((output_file+".pres").c_str(), "w");
     fprintf(fpPres, "%d\n", total_particles);
+    #ifdef FOF
+    fpGrp = CmiFopen((output_file+".grp").c_str(), "w");  // grp = group number for FoF connected component
+    fprintf(fpGrp, "%d\n", total_particles);
+    #endif // FOF
   } else {
       fp = CmiFopen((output_file+".acc").c_str(), "a");
       fpDen = CmiFopen((output_file+".den").c_str(), "a");
       fpPres = CmiFopen((output_file+".pres").c_str(), "a");
+      #ifdef FOF
+      fpGrp = CmiFopen((output_file+".grp").c_str(), "a");
+      #endif // FOF
   }
   CkAssert(fp);
   CkAssert(fpDen);
   CkAssert(fpPres);
+  CkAssert(fpGrp);
 
   for (const auto& particle : particles) {
     Real outval;
@@ -60,6 +69,9 @@ void Writer::do_write()
         fprintf(fpDen, "%.14g\n", particle.density);
         const double gammam1 = 5./3. - 1.0;
         fprintf(fpPres, "%.14g\n", gammam1*particle.u*particle.density);
+        #ifdef FOF
+        fprintf(fpGrp, "%ld\n", particle.group_number);
+        #endif // FOF
     }
   }
 
@@ -69,6 +81,10 @@ void Writer::do_write()
   CkAssert(result == 0);
   result = CmiFclose(fpPres);
   CkAssert(result == 0);
+  #ifdef FOF
+  result = CmiFclose(fpGrp);
+  CkAssert(result == 0);
+  #endif // FOF
 }
 
 TipsyWriter::TipsyWriter(std::string of, BoundingBox b)

@@ -50,6 +50,7 @@ void Particle::pup(PUP::er &p) {
   p|velocity;
   p|soft;
   p|type;
+  p|group_number;
 }
 
 void Particle::reset() {

@@ -6,7 +6,7 @@
 
 struct Particle {
   Key key;
-  int order;
+  int order; // serial number of particle, set by order in initial file (ID)
   int partition_idx = 0; // Only used when Subtree and Partition have different decomp types
 
   Real mass;
@@ -21,6 +21,11 @@ struct Particle {
   Real pressure_dVolume = 0.;
   using Effect = std::pair<Vector3D<Real>, Real>; // accel, pressure
   Real u_predicted;
+
+  // FoF: add a field to store component number in UnionFind (groupId)
+  // postIterationFn loo
+  long int group_number;
+  uint64_t vertex_id; // vertexID of current particle in unionFindLib
 
   enum class Type : char {
     eStar = 1,

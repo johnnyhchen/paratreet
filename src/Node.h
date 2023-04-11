@@ -69,6 +69,13 @@ public:
       particles_[i].perturb(timestep);
     }
   }
+  // Sets fields used in Friends-of-Friends (FoF) clustering
+  void setParticleGroupNumber(int i, long group_number) {
+    particles_[i].group_number = group_number;
+  }
+  void setParticleVertexID(int i, uint64_t vertex_id) {
+    particles_[i].vertex_id = vertex_id;
+  }
 };
 
 template <typename Data>

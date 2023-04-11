@@ -5,6 +5,7 @@
 #include "PressureVisitor.h"
 #include "CollisionVisitor.h"
 #include "EwaldData.h"
+#include "unionFindLib.h"
 
 PARATREET_REGISTER_MAIN(ExMain);
 
@@ -18,6 +19,9 @@ PARATREET_REGISTER_MAIN(ExMain);
 /* readonly */ int iter_start_collision;
 /* readonly */ Real max_timestep;
 /* readonly */ CProxy_EwaldData ewaldProxy;
+
+// only included here so code will compile properly without FoF, not used
+/* readonly */ CProxy_UnionFindLib libProxy;
 
   static void initialize() {
     BoundingBox::registerReducer();

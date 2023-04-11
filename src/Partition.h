@@ -12,11 +12,14 @@
 #include "ThreadStateHolder.h"
 #include "paratreet.decl.h"
 #include "LBCommon.h"
+#include "unionFindLib.h"
 
 CkpvExtern(int, _lb_obj_index);
 extern CProxy_TreeSpec treespec;
 extern CProxy_Reader readers;
 extern CProxy_ThreadStateHolder thread_state_holder;
+extern CProxy_UnionFindLib libProxy;
+
 using namespace LBCommon;
 
 template <typename Data>
@@ -32,7 +35,7 @@ struct Partition : public CBase_Partition<Data> {
 
   std::map<int, std::vector<Key>> lookup_leaf_keys;
 
-  // filled in during traversal
+  unionFindVertex *libVertices;
 
   CProxy_TreeCanopy<Data> tc_proxy;
   CProxy_CacheManager<Data> cm_proxy;
@@ -71,6 +74,11 @@ struct Partition : public CBase_Partition<Data> {
   void ResumeFromSync(){
     return;
   };
+  void initializeLibVertices(const CkCallback &cb);
+  inline uint64_t encodeChareAndArrayIndex(int particles_so_far);
+  static std::pair<int, int> getLocationFromID(uint64_t vid);
+  void unionRequest(int sp_order, int tp_order);
+  void getConnectedComponents(const CkCallback& cb);
 
   Real time_advanced = 0;
   int iter = 1;
@@ -441,7 +449,6 @@ void Partition<Data>::output(CProxy_TipsyWriter w, int n_total_particles, CkCall
 {
   doOutput(w, n_total_particles, cb);
 }
-
 template <typename Data>
 template <typename WriterProxy>
 void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback cb)
@@ -449,6 +456,7 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
   std::vector<Particle> particles;
   copyParticles(particles, false);
 
+  // sort particles into original order and sends them to writer class
   std::sort(particles.begin(), particles.end(),
             [](const Particle& left, const Particle& right) {
               return left.order < right.order;
@@ -475,5 +483,106 @@ void Partition<Data>::doOutput(WriterProxy w, int n_total_particles, CkCallback 
     w[writer_idx].receive(writer_particles, time_advanced, iter);
   }
 }
+
+// -------------------
+// Friends-of-Friends (FoF) functions
+// -------------------
+#ifdef FOF
+/**
+ * @brief Initializes an instance of unionFindLib by reading in all particles
+ * stored on this partition. Must be called after partitions are initialized
+ * with particles
+ * 
+ * @param cb the callback that will be invoked when this function finishes
+ */
+template <typename Data>
+void Partition<Data>::initializeLibVertices(const CkCallback& cb) {
+  int n_particles_on_partition = 0;
+  std::vector<const Particle*> particles;
+  for (auto && leaf : leaves) {
+    n_particles_on_partition += leaf->n_particles;
+  }
+  libVertices = new unionFindVertex[n_particles_on_partition];
+
+  int particles_so_far = 0;
+  for (auto && leaf : leaves) {
+    for (int i = 0; i < leaf->n_particles; i++) {
+      // encodes chare index and array index into vertexID
+      uint64_t vertexID = encodeChareAndArrayIndex(particles_so_far);
+      leaf->setParticleVertexID(i, vertexID);
+      libVertices[particles_so_far].vertexID = vertexID;
+
+      #ifndef ANCHOR_ALGO
+      libVertices[particles_so_far].parent = -1;
+      #else
+      libVertices[particles_so_far].parent = libVertices[particles_so_far].vertexID;
+      #endif
+      particles_so_far++;
+    }
+  }
+
+  UnionFindLib *libPtr = libProxy[this->thisIndex].ckLocal();
+  libPtr->initialize_vertices(libVertices, n_particles_on_partition);
+  libPtr->registerGetLocationFromID(getLocationFromID);
+  this->contribute(cb);
+}
+
+/**
+ * @brief given the overall sequential order of the particle on this partition,
+ * returns a vertexID encoding the vertex's location (chare and array index)
+ * 
+ * returns a vertexID that encodes
+ * the chare index of the vertex in the 32 most significant bits
+ * and the local array index of the vertex in the 32 least significant bits
+ * The vertex is stored locally in the myVertices array of unionfind
+ * and has index equal to the overall sequential order of the particle
+ * on this partition
+ * 
+ * @param particles_so_far overall sequential order of the particle
+ * on this partition
+ * 
+ * @return uint64_t vertexID encoding location of vertex
+ */
+template <typename Data>
+inline uint64_t Partition<Data>::encodeChareAndArrayIndex(int particles_so_far) {
+  return (((uint64_t)this->thisIndex) << 32) | particles_so_far;
+}
+
+/**
+ * @brief decodes a vertexID and returns its location (chare and array index)
+ * 
+ * @param vid the ID of a vertex. Assumes it is of type uint64_t
+ * @return std::pair<int, int> 
+ */
+// Used with unionFindLib. Given a vertexID, returns the chare index and local array index where the particle (vertex) is stored
+// Assumes parameter vid stores the chare index in the 32 most significant bits and the array index in the 32 least significant bits
+template <typename Data>
+std::pair<int, int> Partition<Data>::getLocationFromID(uint64_t vid) {
+  // decodes chare index and array index from vertexID
+  int chareIdx = (vid >> 32);
+  int arrIdx = vid & 0xffffffff;
+  return std::make_pair(chareIdx, arrIdx);
+}
+
+/**
+ * @brief Assigns component (group) number to particles after unions are
+ * performed between all particles on this partition
+ * 
+ * @param cb Callback to execute after function finishes executing
+ */
+template <typename Data>
+void Partition<Data>::getConnectedComponents(const CkCallback& cb) {
+  int particles_so_far = 0;
+  for (auto && leaf : leaves) {
+    for (int i = 0; i < leaf->n_particles; i++) {
+      long startingGroupNumberOffset = 1;  // so particles that are not part of a cluster have groupID 0 (currently -1 in unionFind implementation)
+      long groupID = libVertices[particles_so_far].componentNumber + startingGroupNumberOffset;
+      leaf->setParticleGroupNumber(i, groupID);
+      particles_so_far++;
+    }
+  }
+  this->contribute(cb);
+}
+#endif // FOF
 
 #endif /* _PARTITION_H_ */

@@ -102,6 +102,12 @@ module paratreet {
     entry void pauseForLB();
     entry void requestParticleUpdates(int cm_index, std::vector<Key> pKeys);
     entry void applyOpposingEffects(std::vector<std::pair<Key, std::pair<Vector3D<Real>, Real>>> effects);
+    
+    // FoF functions
+    #ifdef FOF    
+    entry void initializeLibVertices(const CkCallback &cb);
+    entry void getConnectedComponents(const CkCallback& cb);
+    #endif
   }
 
   template <typename Data>
